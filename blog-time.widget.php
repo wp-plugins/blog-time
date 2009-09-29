@@ -67,8 +67,8 @@ class BlogTimeWidget extends WP_Widget {
 		return $instance;
 	}
 
-	function form( $instance ) {
-		$instance = wp_parse_args( (array) $instance, $this->defaults );	
+	function form( $instance, $exclude_options = array('') ) {
+		$instance = wp_parse_args( (array) $instance, $this->defaults );
 		$i = $j = 0;
 		foreach ( $instance as $opt => $value ) {
 			if ( $opt == 'submit' ) continue;

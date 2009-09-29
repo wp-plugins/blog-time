@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Blog Time
-Version: 1.0
+Version: 1.0.1
 Plugin URI: http://coffee2code.com/wp-plugins/blog-time
 Author: Scott Reilly
 Author URI: http://coffee2code.com
