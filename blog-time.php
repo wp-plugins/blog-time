@@ -1,11 +1,16 @@
 <?php
+/**
+ * @package Blog_Time
+ * @author Scott Reilly
+ * @version 1.0.2
+ */
 /*
 Plugin Name: Blog Time
-Version: 1.0.1
+Version: 1.0.2
 Plugin URI: http://coffee2code.com/wp-plugins/blog-time
 Author: Scott Reilly
 Author URI: http://coffee2code.com
-Description: Show a timestamp of your blog's time via a widget, admin widget, and/or template tag.
+Description: Display the time according to your blog via a widget, admin widget, and/or template tag.
 
 This plugin adds a timestamp string to the top of all admin pages to show the server time for the blog.  This admin time widget
 is AJAX-ified so that if you click the timestamp, it updates in place (without a page reload) to show the new current server time.
@@ -19,7 +24,7 @@ time when the widget last retrieved the time.  It does not actively increment ti
 This is most useful to see the server/blog time to judge when a time sensitive post, comment, or action would be dated by the blog (i.e. such
 as monitoring for when to close comments on a contest post, or just accounting for the server being hosted in a different timezone).
 
-Compatible with WordPress 2.6+, 2.7+, 2.8+.
+Compatible with WordPress 2.6+, 2.7+, 2.8+, 2.9+.
 
 =>> Read the accompanying readme.txt file for more information.  Also, visit the plugin's homepage
 =>> for more information and the latest updates
@@ -27,13 +32,13 @@ Compatible with WordPress 2.6+, 2.7+, 2.8+.
 Installation:
 
 1. Download the file http://coffee2code.com/wp-plugins/blog-time.zip and unzip it into your 
-/wp-content/plugins/ directory.
+/wp-content/plugins/ directory (or install via the built-in WordPress plugin installer).
 2. Activate the plugin through the 'Plugins' admin menu in WordPress
 3. Optionally use the 'Blog Time' widget (only in WP2.8+) or the template tag 'blog_time()' in a theme template file, to display the blog's time at the time of the page's rendering.
 */
 
 /*
-Copyright (c) 2009 by Scott Reilly (aka coffee2code)
+Copyright (c) 2009-2010 by Scott Reilly (aka coffee2code)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation 
 files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, 
@@ -54,6 +59,9 @@ if ( !class_exists('BlogTime') ) :
 class BlogTime {
 	var $config = array();
 
+	/**
+	 * Class constructor: initializes class variables and adds actions and filters.
+	 */
 	function BlogTime() {
 		$this->config = array(
 			'time_format' => __('g:i A')
@@ -64,13 +72,22 @@ class BlogTime {
 		add_action('admin_head', array(&$this, 'add_css'));
 	}
 
+	/**
+	 * Converts the current database time into a formatted string.
+	 *
+	 * @param string $time_format PHP-style datetime format string. Uses plugin default if not specified.
+	 * @param boolean $echo (optional) Echo the time to the page?
+	 * @return string The formatted blog time.
+	 */
 	function display_time( $time_format = '' ) {
 		if ( empty($time_format) )
 			$time_format = apply_filters('blog_time_format', $this->config['time_format']);
 		return date_i18n( $time_format, strtotime( current_time('mysql') ) );
 	}
 
-	// AJAX responder
+	/**
+	 * AJAX responder to return the value of display_time().
+	 */
 	function report_time() {
 		if ( is_admin() && isset($_GET['blog_time']) && $_GET['blog_time'] == '1' ) {
 			echo $this->display_time();
@@ -78,6 +95,9 @@ class BlogTime {
 		}
 	}
 
+	/**
+	 * Outputs CSS within style tags
+	 */
 	function add_css() {
 		echo <<<CSS
 		<style type="text/css">
@@ -87,6 +107,9 @@ class BlogTime {
 CSS;
 	}
 
+	/**
+	 * Outputs the markup to display the admin time widget, as well as the JavaScript to allow it to be updated via a click.
+	 */
 	function add_widget() {
 		echo "<span id='blog-time'> | <a href='#' title='" . __('Click to refresh blog time') . "'>" .
 			$this->display_time() . "</a></span>\n";
@@ -114,10 +137,10 @@ if ( class_exists('BlogTime') ) {
 	if ( !function_exists('blog_time') ) {
 		/**
 		 * Template tag to display the blog's time.
-		 *	
-		 *	@param string $time_format PHP-style datetime format string. Uses plugin default if not specified.
-		 *	@param boolean $echo Optional. Echo the time to the page?
-		 *	@return string The formatted blog time.
+		 *
+		 * @param string $time_format PHP-style datetime format string. Uses plugin default if not specified.
+		 * @param boolean $echo (optional) Echo the time to the page?
+		 * @return string The formatted blog time.
 		 */
 		function blog_time( $time_format = '', $echo = true ) {
 			$val = $GLOBALS['c2c_blog_time'] ? $GLOBALS['c2c_blog_time']->display_time($time_format) : '';

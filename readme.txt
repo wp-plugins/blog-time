@@ -3,9 +3,9 @@ Contributors: coffee2code
 Donate link: http://coffee2code.com/donate
 Tags: server, blog, time, datetime, widget, widgets, template tag, coffee2code
 Requires at least: 2.6
-Tested up to: 2.8.4
-Stable tag: 1.0.1
-Version: 1.0.1
+Tested up to: 2.9.1
+Stable tag: 1.0.2
+Version: 1.0.2
 
 Display the time according to your blog via a widget, admin widget, and/or template tag.
 
@@ -24,7 +24,7 @@ This is most useful to see the server/blog time to judge when a time sensitive p
 
 == Installation ==
 
-1. Unzip `blog-time.zip` inside the `/wp-content/plugins/` directory for your site
+1. Unzip `blog-time.zip` inside the `/wp-content/plugins/` directory for your site (or install via the built-in WordPress plugin installer)
 1. Activate the plugin through the 'Plugins' admin menu in WordPress
 1. Optionally use the 'Blog Time' widget (only in WP2.8+), or the template tag `blog_time()` in a theme template file, to display the blog's time at the time of the page's rendering.
 
@@ -46,8 +46,13 @@ This plugin does not provide an active clock that continues to update to reflect
 
 == Changelog ==
 
+= 1.0.2 =
+* Add PHPDoc documentation
+* Note compatibility with WP 2.9+
+* Update copyright date
+
 = 1.0.1 =
-* Fixed minor bug pertaining to use of undeclared variable
+* Fix minor bug pertaining to use of undeclared variable
 
 = 1.0 =
 * Initial release

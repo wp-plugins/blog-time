@@ -1,8 +1,13 @@
 <?php
+/**
+ * @package Blog_Time
+ * @author Scott Reilly
+ * @version 1.0.2
+ */
 /*
  * Blog Time plugin widget code
  *
- * Copyright (c) 2009 by Scott Reilly (aka coffee2code)
+ * Copyright (c) 2009-2010 by Scott Reilly (aka coffee2code)
  *
  */
 
@@ -29,6 +34,9 @@ class BlogTimeWidget extends WP_Widget {
 	);
 	var $defaults = array();
 
+	/**
+	 * Class constructor: initializes class variables and adds actions and filters.
+	 */
 	function BlogTimeWidget() {
 		$this->title = __($this->title);
 		foreach ( $this->config as $key => $value )
@@ -67,6 +75,13 @@ class BlogTimeWidget extends WP_Widget {
 		return $instance;
 	}
 
+	/**
+	 * Outputs the form for the widget.
+	 *
+	 * @param string $instance The widget instance.
+	 * @param array $exclude_options (optional) Array of options to exclude.
+	 * @return null (Text is echoed; nothing is returned)
+	 */
 	function form( $instance, $exclude_options = array('') ) {
 		$instance = wp_parse_args( (array) $instance, $this->defaults );
 		$i = $j = 0;
