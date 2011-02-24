@@ -2,47 +2,31 @@
 /**
  * @package Blog_Time
  * @author Scott Reilly
- * @version 1.0.2
+ * @version 1.2
  */
 /*
 Plugin Name: Blog Time
-Version: 1.0.2
-Plugin URI: http://coffee2code.com/wp-plugins/blog-time
+Version: 1.2
+Plugin URI: http://coffee2code.com/wp-plugins/blog-time/
 Author: Scott Reilly
 Author URI: http://coffee2code.com
+Text Domain: blog-time
 Description: Display the time according to your blog via a widget, admin widget, and/or template tag.
 
-This plugin adds a timestamp string to the top of all admin pages to show the server time for the blog.  This admin time widget
-is AJAX-ified so that if you click the timestamp, it updates in place (without a page reload) to show the new current server time.
+Compatible with WordPress 2.8+, 2.9+, 3.0+, 3.1+.
 
-Also provided is a "Blog Time" widget (for WP2.8+) providing the same functionality as the admin widget, but for your sidebars.
-You may also utilize the plugin's capabilities directly within a theme template via use of the template tag "blog_time()".
+=>> Read the accompanying readme.txt file for instructions and documentation.
+=>> Also, visit the plugin's homepage for additional information and updates.
+=>> Or visit: http://wordpress.org/extend/plugins/blog-time/
 
-NOTE: This plugin generates a timestamp and NOT a clock.  The time being displayed is the time of the page load, or if clicked, the
-time when the widget last retrieved the time.  It does not actively increment time on the display.
-
-This is most useful to see the server/blog time to judge when a time sensitive post, comment, or action would be dated by the blog (i.e. such
-as monitoring for when to close comments on a contest post, or just accounting for the server being hosted in a different timezone).
-
-Compatible with WordPress 2.6+, 2.7+, 2.8+, 2.9+.
-
-=>> Read the accompanying readme.txt file for more information.  Also, visit the plugin's homepage
-=>> for more information and the latest updates
-
-Installation:
-
-1. Download the file http://coffee2code.com/wp-plugins/blog-time.zip and unzip it into your 
-/wp-content/plugins/ directory (or install via the built-in WordPress plugin installer).
-2. Activate the plugin through the 'Plugins' admin menu in WordPress
-3. Optionally use the 'Blog Time' widget (only in WP2.8+) or the template tag 'blog_time()' in a theme template file, to display the blog's time at the time of the page's rendering.
 */
 
 /*
-Copyright (c) 2009-2010 by Scott Reilly (aka coffee2code)
+Copyright (c) 2009-2011 by Scott Reilly (aka coffee2code)
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation 
-files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, 
-modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the 
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
+files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
+modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the
 Software is furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
@@ -53,101 +37,150 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRA
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-require_once(dirname(__FILE__) . '/blog-time.widget.php');
+require_once( dirname( __FILE__ ) . '/blog-time.widget.php' );
 
-if ( !class_exists('BlogTime') ) :
-class BlogTime {
-	var $config = array();
+if ( !class_exists( 'c2c_BlogTime' ) ) :
+
+class c2c_BlogTime {
+	private static $config            = array();
+	private static $textdomain        = 'blog-time';
+	private static $textdomain_subdir = '';
+	private static $span_id           = 'blog-time-admin-widget';
 
 	/**
-	 * Class constructor: initializes class variables and adds actions and filters.
+	 * Constructor
+	 *
 	 */
-	function BlogTime() {
-		$this->config = array(
-			'time_format' => __('g:i A')
+	public function init() {
+		self::$config = array(
+			'time_format' => __( 'g:i A', self::$textdomain )
 		);
 
-		add_action('plugins_loaded', array(&$this, 'report_time'), 1);
-		add_action('admin_footer', array(&$this, 'add_widget'));
-		add_action('admin_head', array(&$this, 'add_css'));
+		add_action( 'init', array( __CLASS__, 'do_init' ) );
 	}
 
 	/**
-	 * Converts the current database time into a formatted string.
-	 *
-	 * @param string $time_format PHP-style datetime format string. Uses plugin default if not specified.
-	 * @param boolean $echo (optional) Echo the time to the page?
-	 * @return string The formatted blog time.
+	 * Handle initialization
 	 */
-	function display_time( $time_format = '' ) {
-		if ( empty($time_format) )
-			$time_format = apply_filters('blog_time_format', $this->config['time_format']);
-		return date_i18n( $time_format, strtotime( current_time('mysql') ) );
+	public function do_init() {
+		self::load_textdomain();
+		add_action( 'admin_head',                 array( __CLASS__, 'add_css' ) );
+		add_action( 'admin_print_footer_scripts', array( __CLASS__, 'add_widget' ) );
+		add_action( 'wp_ajax_report_time',        array( __CLASS__, 'report_time' ) );
+		add_action( 'wp_ajax_nopriv_report_time', array( __CLASS__, 'report_time' ) );
+		add_action( 'wp_head',                    array( __CLASS__, 'set_js_ajaxurl' ) );
 	}
 
 	/**
-	 * AJAX responder to return the value of display_time().
+	 * Loads the localization textdomain for the plugin.
+	 *
+	 * @return void
+	 */
+	public function load_textdomain() {
+		$subdir = empty( self::$textdomain_subdir ) ? '' : ( '/' . self::$textdomain_subdir );
+		load_plugin_textdomain( self::$textdomain, false, basename( dirname( __FILE__ ) ) . $subdir );
+	}
+
+	/**
+	 * Formats the current time (mysql) to the specified time format.
+	 *
+	 * @param string $time_format (optional) The format for the time string, if not the default.
+	 * @return string The time string
+	 */
+	public function display_time( $time_format = '' ) {
+		if ( empty( $time_format ) )
+			$time_format = apply_filters( 'blog_time_format', self::$config['time_format'] );
+		return date_i18n( $time_format, strtotime( current_time( 'mysql' ) ) );
+	}
+
+	/**
+	 * Sets JS variables to paths useful for AJAX
+	 *
+	 * @since 1.2
+	 */
+	function set_js_ajaxurl() {
+		$ajaxurl = admin_url( 'admin-ajax.php' );
+		$wpcontenturl = get_stylesheet_directory_uri();
+		echo "<script type='text/javascript'>var ajaxurl = '$ajaxurl'; var wpcontenturl = '$wpcontenturl';</script>\n";
+	}
+
+	/**
+	 * The AJAX responder to return the blog time.
+	 *
+	 * @return void
 	 */
 	function report_time() {
-		if ( is_admin() && isset($_GET['blog_time']) && $_GET['blog_time'] == '1' ) {
-			echo $this->display_time();
-			exit();
-		}
+		echo self::display_time();
+		exit();
 	}
 
 	/**
-	 * Outputs CSS within style tags
+	 * Outputs CSS
+	 *
+	 * @return void (Text is echoed.)
 	 */
 	function add_css() {
-		echo <<<CSS
-		<style type="text/css">
-		#blog-time {display:none;}
-		</style>
-
-CSS;
+		echo '<style type="text/css">#' . self::$span_id . "{display:none;}</style>\n";
 	}
 
 	/**
-	 * Outputs the markup to display the admin time widget, as well as the JavaScript to allow it to be updated via a click.
+	 * Outputs the admin widget
+	 *
+	 * @return void (Text is echoed.)
 	 */
 	function add_widget() {
-		echo "<span id='blog-time'> | <a href='#' title='" . __('Click to refresh blog time') . "'>" .
-			$this->display_time() . "</a></span>\n";
+		$span_id = self::$span_id;
+		echo "<span id='$span_id'> | <a href='#' title='" . __( 'Click to refresh blog time', self::$textdomain ) . "'>" .
+			self::display_time() . "</a></span>\n";
 		echo <<<JS
 		<script type="text/javascript">
 		jQuery(document).ready(function($) {
-			$('#blog-time').insertAfter($('#user_info p a:first')).show();
-			$('#blog-time a').click( function() {
-				$(this).load('/wp-admin/?blog_time=1');
+			$('#$span_id').insertAfter($('#user_info p a:first')).show();
+			$('#$span_id a').click(function() {
+				$.get(ajaxurl, {action: 'report_time'}, function(data) {
+					$('#$span_id a').html(data);
+				});
 				return false;
 			});
 		});
 		</script>
+
 JS;
 	}
 
-} // end BlogTime
+} // end c2c_BlogTime
 
-endif; // end if !class_exists()
 
-if ( class_exists('BlogTime') ) {
-	$c2c_blog_time = new BlogTime();
+c2c_BlogTime::init();
 
-	// Template tag
-	if ( !function_exists('blog_time') ) {
-		/**
-		 * Template tag to display the blog's time.
-		 *
-		 * @param string $time_format PHP-style datetime format string. Uses plugin default if not specified.
-		 * @param boolean $echo (optional) Echo the time to the page?
-		 * @return string The formatted blog time.
-		 */
-		function blog_time( $time_format = '', $echo = true ) {
-			$val = $GLOBALS['c2c_blog_time'] ? $GLOBALS['c2c_blog_time']->display_time($time_format) : '';
-			if ( $echo ) echo $val;
-			return $val;
-		}
+// Template tag
+if ( !function_exists( 'c2c_blog_time' ) ) {
+	/**
+	 * Template tag to display the blog's time.
+	 *
+	 * @since 1.1
+	 * @param string $time_format PHP-style datetime format string. Uses plugin default if not specified.
+	 * @param boolean $echo Optional. Echo the time to the page?
+	 * @return string The formatted blog time.
+	 */
+	function c2c_blog_time( $time_format = '', $echo = true ) {
+		$val = c2c_BlogTime::display_time( $time_format );
+		if ( $echo ) echo $val;
+		return $val;
+	}
+	add_filter( 'c2c_blog_time', 'c2c_blog_time', 10, 2 );
+}
+
+// Deprecated
+if ( !function_exists( 'blog_time' ) ) {
+	/**
+	 * @deprecated 1.1 Use c2c_blog_time() instead
+	 */
+	function blog_time( $time_format = '', $echo = true ) {
+		_deprecated_function( __FUNCTION__, '1.1', 'c2c_blog_time()' );
+		return c2c_blog_time( $time_format, $echo );
 	}
 }
 
+endif; // end if !class_exists()
 ?>
